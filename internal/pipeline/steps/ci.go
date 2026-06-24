@@ -88,6 +88,22 @@ func (s *CIStep) Execute(sctx *pipeline.StepContext) (*pipeline.StepOutcome, err
 		}
 	}
 	if prURL == "" {
+		// The PR may have been opened out-of-band: the push/pr steps can be
+		// skipped when an external tool (e.g. `gt submit`, or a manual `gh`
+		// push) already created the PR. Adopt it by head ref so CI monitoring
+		// still runs instead of skipping silently.
+		branch := strings.TrimPrefix(sctx.Run.Branch, "refs/heads/")
+		if found, ferr := host.FindPR(ctx, branch, sctx.Repo.DefaultBranch); ferr != nil {
+			sctx.Log(fmt.Sprintf("could not look up existing PR for %s: %v", branch, ferr))
+		} else if found != nil {
+			prURL = found.URL
+			sctx.Run.PRURL = &prURL
+			if uerr := sctx.DB.UpdateRunPRURL(sctx.Run.ID, prURL); uerr != nil {
+				sctx.Log(fmt.Sprintf("warning: could not persist discovered PR URL: %v", uerr))
+			}
+		}
+	}
+	if prURL == "" {
 		sctx.Log("no PR URL found, skipping CI")
 		return &pipeline.StepOutcome{Skipped: true}, nil
 	}

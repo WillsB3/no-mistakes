@@ -174,6 +174,7 @@ Monitors PR health after creation and auto-fixes CI failures. Mergeability polli
 - Bitbucket Cloud requires `NO_MISTAKES_BITBUCKET_EMAIL` and `NO_MISTAKES_BITBUCKET_API_TOKEN`.
 
 **Behavior:**
+- Resolves the PR to monitor from the run's recorded PR URL; if none is recorded — for example the `push` and `pr` steps were skipped because an external tool (such as `gt submit`) already pushed the branch and opened the PR — looks one up by head ref and adopts it, and skips CI only when no open PR is found
 - Polls provider CI status at increasing intervals: every 30s for the first 5 minutes, every 60s for 5-15 minutes, every 120s after that
 - Continues monitoring an open PR until it is merged, closed, declined, or the configured `ci_timeout` idle window elapses, even after CI checks are currently healthy
 - Treats `ci_timeout` as an idle timeout: each upstream default-branch advance re-arms the timer, and `ci_timeout: "unlimited"` disables self-termination

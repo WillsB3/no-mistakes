@@ -424,6 +424,21 @@ func fakeCIGH(t *testing.T, state, checksJSON string) []string {
 	})
 }
 
+// fakeCIGHWithExistingPR behaves like fakeCIGH but also answers `gh pr list`
+// (used by FindPR) with a single PR at prURL, so the CI step can adopt a PR
+// that was opened out-of-band when push/pr were skipped.
+func fakeCIGHWithExistingPR(t *testing.T, state, checksJSON, prURL string) []string {
+	t.Helper()
+	binDir := fakeCLIBinDir(t)
+	linkTestBinary(t, binDir, "gh")
+	return fakeCLIEnv(binDir, map[string]string{
+		"FAKE_CLI_MODE":   "ci-gh",
+		"FAKE_CLI_STATE":  state,
+		"FAKE_CLI_CHECKS": checksJSON,
+		"FAKE_CLI_PR_URL": prURL,
+	})
+}
+
 func fakeCIGHMergeable(t *testing.T, state, checksJSON, mergeable string) []string {
 	t.Helper()
 	binDir := fakeCLIBinDir(t)
