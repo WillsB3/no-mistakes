@@ -110,6 +110,43 @@ func TestCIStep_UsesStepEnvForCLIStartupChecks(t *testing.T) {
 	}
 }
 
+func TestCIStep_AdoptsExistingPRWhenRunHasNoPRURL(t *testing.T) {
+	// When push/pr are skipped (e.g. Graphite's `gt submit` opened the PR
+	// out-of-band), Run.PRURL is nil. The CI step must discover the PR by head
+	// ref via FindPR and monitor it instead of skipping silently.
+	dir, baseSHA, headSHA := setupGitRepo(t)
+
+	prURL := "https://github.com/test/repo/pull/42"
+	env := fakeCIGHWithExistingPR(t, "MERGED", "[]", prURL)
+	ag := &mockAgent{name: "test"}
+	sctx := newTestContext(t, ag, dir, baseSHA, headSHA, config.Commands{})
+	sctx.Env = env
+	sctx.Run.PRURL = nil
+
+	var logs []string
+	sctx.Log = func(s string) { logs = append(logs, s) }
+
+	step := &CIStep{}
+	outcome, err := step.Execute(sctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Skipped {
+		t.Fatalf("expected CI to adopt the out-of-band PR, but it skipped; logs: %v", logs)
+	}
+	if sctx.Run.PRURL == nil || *sctx.Run.PRURL != prURL {
+		t.Fatalf("expected Run.PRURL adopted as %q, got %v", prURL, sctx.Run.PRURL)
+	}
+	for _, logLine := range logs {
+		if strings.Contains(logLine, "no PR URL found") {
+			t.Fatalf("expected the discovered PR to be monitored, got skip log: %v", logs)
+		}
+	}
+	if len(logs) == 0 || !strings.Contains(logs[len(logs)-1], "PR has been merged") {
+		t.Fatalf("expected CI to monitor the adopted PR to merge, got logs: %v", logs)
+	}
+}
+
 func TestCIStep_InvalidPRURLReturnsError(t *testing.T) {
 	t.Parallel()
 	dir, baseSHA, headSHA := setupGitRepo(t)

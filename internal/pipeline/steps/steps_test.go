@@ -238,6 +238,15 @@ func fakeCIGHHandler(args []string) {
 		fmt.Println("error log output")
 		os.Exit(0)
 	}
+	if len(args) >= 2 && args[0] == "pr" && args[1] == "list" {
+		prURL := os.Getenv("FAKE_CLI_PR_URL")
+		if prURL == "" {
+			fmt.Println("[]")
+			os.Exit(0)
+		}
+		fmt.Printf("[{\"number\":%d,\"url\":%q}]\n", extractTrailingNumber(prURL), prURL)
+		os.Exit(0)
+	}
 	os.Exit(1)
 }
 

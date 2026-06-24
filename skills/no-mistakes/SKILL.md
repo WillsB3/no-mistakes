@@ -182,6 +182,15 @@ fix round, accepts the resulting fix review, and approves gates with only
 `no-op` findings. Only use it when the user has asked you to drive the whole
 run without checking back.
 
+## When an external tool owns push and PR
+
+If the branch is pushed and its PR opened outside no-mistakes - e.g. a stacking
+tool like Graphite (`gt submit`) - run with `--skip=push,pr`. The local
+gate (rebase, review, test, document, lint) still runs, and the CI step
+discovers the existing PR by branch and monitors its checks and mergeability as
+usual, the same as if no-mistakes had opened it. Prefer this over letting
+no-mistakes push whenever the user manages push and PR with their own tool.
+
 ## Inspecting state
 
 ```sh
